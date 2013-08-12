@@ -1,0 +1,7 @@
+# SystemC path
+SYSTEMC_DIR=$(SYSTEMC)
+
+# Utilities
+RM		= rm
+SED		= sed
+CHMOD	= chmod
