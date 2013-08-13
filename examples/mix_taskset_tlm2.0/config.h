@@ -16,8 +16,8 @@ const unsigned long long const_end_time =  5000000000ull;
 
 #define MAX_INTR 2
 #define L1
-#define INTL
-//#define INTM
+//#define INTL
+#define INTM
 //#define INTH
 //#define NO_INTR
 

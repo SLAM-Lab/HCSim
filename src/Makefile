@@ -45,7 +45,7 @@ handshake_ch.o: Channels/handshake_ch.cpp
 	$(CC) $(CFLAGS) -c $<
 
 clean:
-	-rm $(OBJECTS) *~ 
+	-$(RM) $(OBJECTS) *~ 
 
 distclean: clean
-	-rm $(SHARED_LIB) $(STATIC_LIB)
+	-$(RM) $(SHARED_LIB) $(STATIC_LIB)

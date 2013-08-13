@@ -26,9 +26,9 @@ const unsigned long long const_end_time =  5000000000ull;
 //#define S2
 
 /* Select interrupt priority level */
-#define INTL
+//#define INTL
 //#define INTM
-//#define INTH
+#define INTH
 //#define NO_INTR /* with a selected intr. priority level*/
 
 #ifdef L1

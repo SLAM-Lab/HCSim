@@ -5,3 +5,5 @@ SYSTEMC_DIR=$(SYSTEMC)
 RM		= rm
 SED		= sed
 CHMOD	= chmod
+LN		= ln 
+TIME	= /usr/bin/time

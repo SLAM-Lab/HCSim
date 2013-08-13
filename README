@@ -2,18 +2,13 @@
 #HOST-COMPILED MULTI_CORE SIMULATOR MODEL LIBRARY#
 ##################################################
 
-# To set System2.3.0 and HCSim paths
-- edit setup.sh file
-> source setup.sh
-  
 # To compile "libhcsim.so" library
-> cd lib
 > make
 
-# To run an example
-> cd examples/mix_taskset
-> make
-> ./main
+# To run examples
+> source bin/setup.sh
+> make test
+
 
 #Folders & files tree
 HCsim

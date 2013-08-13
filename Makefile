@@ -3,15 +3,15 @@ include Makefile.macros
 
 TARGET	= libhcsim.so
 
-SUBDIRS	= src bin
+SUBDIRS	= src bin 
 
-EXAMPLES= examples/ examples/ examples/
+EXAMPLES= examples/simple_taskset examples/mix_taskset examples/mix_taskset_tlm2.0
 
 all:
 	set -e ; for d in $(SUBDIRS); do	\
 	  $(MAKE) -C $$d ;			\
 	done
-	-$(LN) ../src/$(TARGET) lib/$(TARGET)
+	-$(LN) src/$(TARGET) lib/$(TARGET)
 
 test:
 	set -e ; for d in $(EXAMPLES); do	\
