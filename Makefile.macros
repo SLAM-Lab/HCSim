@@ -1,9 +1,12 @@
 # SystemC path
-SYSTEMC_DIR=$(SYSTEMC)
+SYSTEMC_DIR=/home/unga/group/gerstl/pkg/systemc-2.3.0
+
+# Compiler
+CC	= g++
 
 # Utilities
-RM		= rm
-SED		= sed
+RM	= rm
+SED	= sed
 CHMOD	= chmod
-LN		= ln 
+LN	= ln -s
 TIME	= /usr/bin/time

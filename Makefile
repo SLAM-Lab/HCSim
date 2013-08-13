@@ -11,7 +11,7 @@ all:
 	set -e ; for d in $(SUBDIRS); do	\
 	  $(MAKE) -C $$d ;			\
 	done
-	-$(LN) src/$(TARGET) lib/$(TARGET)
+	-$(LN) ../src/$(TARGET) lib/$(TARGET)
 
 test:
 	set -e ; for d in $(EXAMPLES); do	\
@@ -22,4 +22,5 @@ clean:
 	set -e ; for d in $(SUBDIRS) $(EXAMPLES); do	\
 	  $(MAKE) -C $$d clean ;			\
 	done
+	-$(RM) *~
 
