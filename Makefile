@@ -23,4 +23,5 @@ clean:
 	  $(MAKE) -C $$d clean ;			\
 	done
 	-$(RM) *~
+	-$(RM) lib/libhcsim.so
 
