@@ -17,7 +17,7 @@
         ,busSlaveMacLink_2("busSlaveMacLink_2")
     {
 
-        MainBus_HINT.init(CON_INTR_NUM);
+        //MainBus_HINT.init(CON_INTR_NUM);
         
         MainBus = new  HCSim::AmbaAhbMacTlm("MainBus");
         
@@ -62,7 +62,8 @@
     
  private:
     // Channels 
-    sc_core::sc_vector< HCSim::handshake_ch  > MainBus_HINT;
+    //sc_core::sc_vector< HCSim::handshake_ch  > MainBus_HINT;
+    HCSim::handshake_ch MainBus_HINT[CON_INTR_NUM];
     // TLM AMBA AHB bus model
     HCSim::AmbaAhbMacTlm* MainBus;
     // TLM MultiCore Processpr model

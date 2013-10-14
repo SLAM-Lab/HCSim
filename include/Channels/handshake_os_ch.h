@@ -23,7 +23,8 @@ class handshake_os_ch
  public:
     sc_core::sc_port< OSAPI > os_port;
 	
-    handshake_os_ch(const sc_core::sc_module_name name);
+	handshake_os_ch();
+    handshake_os_ch(const sc_core::sc_module_name name, sc_dt::uint64 clock_period = CLOCK_PERIOD);
     ~handshake_os_ch();
 
     void send(int tID);
@@ -34,6 +35,8 @@ class handshake_os_ch
     bool forward_flag, wait_flag;
     OSProc blocked_task_id;
     OSProc blocking_task_id;
+    sc_dt::uint64 clock_period;
+    
 };
 
 } //HCSim

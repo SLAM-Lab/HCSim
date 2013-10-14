@@ -416,7 +416,7 @@ void Interrupt_Handler::intr_handler(void)
 #ifdef INTR_TRACE_ON             
             printf("%llu: C%d Interrupt handler HAL layer start. \n", sc_core::sc_time_stamp().value(), core_id);
 #endif
-        sc_core::wait(IHANDLER_DELAY_1 * CLOCK_PERIOD, SIM_RESOLUTION); 
+        sc_core::wait(IHANDLER_DELAY_1, SIM_RESOLUTION); 
          /*---------------------------------------------------------
             Reads interrupt source ID 
          ----------------------------------------------------------*/ 	    	
@@ -447,7 +447,7 @@ void Interrupt_Handler::intr_handler(void)
                     intr_port->intHandler();
                 break;
             }
-            sc_core::wait(IHANDLER_DELAY_2 * CLOCK_PERIOD, SIM_RESOLUTION); 
+            sc_core::wait(IHANDLER_DELAY_2, SIM_RESOLUTION); 
             /*---------------------------------------------------------
                 Writes End-Of-Interrupt register
             ----------------------------------------------------------*/   	

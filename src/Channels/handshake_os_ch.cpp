@@ -8,13 +8,24 @@
 
 using namespace HCSim;
 
-handshake_os_ch::handshake_os_ch(const sc_core::sc_module_name name)
+handshake_os_ch::handshake_os_ch()
+    :sc_core::sc_channel(sc_core::sc_gen_unique_name("handshake_os_ch"))
+    ,forward_flag(false)
+    ,wait_flag(false)
+    ,blocked_task_id(OS_NO_TASK)
+    ,blocking_task_id(OS_NO_TASK)
+    ,clock_period(CLOCK_PERIOD)
+{
+}
+
+handshake_os_ch::handshake_os_ch(const sc_core::sc_module_name name, sc_dt::uint64 clock_period)
     :sc_core::sc_channel(name)
     ,forward_flag(false)
     ,wait_flag(false)
     ,blocked_task_id(OS_NO_TASK)
     ,blocking_task_id(OS_NO_TASK)
 {
+    this->clock_period = clock_period;
 }
 
 handshake_os_ch::~handshake_os_ch()
@@ -23,9 +34,12 @@ handshake_os_ch::~handshake_os_ch()
 
 void handshake_os_ch::send(int tID)
 {
+    
     blocking_task_id = tID;
 #ifdef TIMED_HANDSHAKE_CHANNEL
-	os_port->timeWait(HSHK_CH_SEND_DELAY, tID);
+    sc_dt::uint64 delay;
+    delay = (sc_dt::uint64) HSHK_CH_SEND_INSTR * clock_period;
+	os_port->timeWait(delay, tID);
 #endif
      os_port->syncGlobalTime(tID);
     if (wait_flag) {
@@ -38,9 +52,12 @@ void handshake_os_ch::send(int tID)
 
 void handshake_os_ch::receive(int tID)
 {
+   
     blocked_task_id = tID;
 #ifdef TIMED_HANDSHAKE_CHANNEL
-	os_port->timeWait(HSHK_CH_RECEIVE_DELAY, tID);
+    sc_dt::uint64 delay;
+    delay = (sc_dt::uint64) HSHK_CH_RECEIVE_INSTR * clock_period;
+	os_port->timeWait(delay, tID);
 #endif
     os_port->syncGlobalTime(tID);
     if (!forward_flag) { 
@@ -52,7 +69,8 @@ void handshake_os_ch::receive(int tID)
     } 
     forward_flag = false;
 #ifdef TIMED_HANDSHAKE_CHANNEL    
-    os_port->timeWait(HSHK_CH_RECEIVE_DELAY_2, tID);
+    delay = (sc_dt::uint64) HSHK_CH_RECEIVE_INSTR_2 * clock_period;
+    os_port->timeWait(delay, tID);
     os_port->syncGlobalTime(tID);
 #endif    
 }

@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <vector>
 #include <systemc>
-#include <tlm>
+#include <tlm.h>
 
 #include "sim_config.h"
 #include "Processor/global_gic.h"
@@ -36,7 +36,11 @@ class GIC_IntrDetect_TLM
  public:
     sc_core::sc_port< receive_if > detect;
     sc_core::sc_in< sc_dt::sc_bv< GIC_MAX_CPU > > IPTR;
-    sc_core::sc_vector< sc_core::sc_out_rv< INTR_NUM > > pending;
+#ifdef SYSTEMC_2_3_0    
+    sc_core::sc_vector< sc_core::sc_inout_rv< INTR_NUM > > pending;
+#else
+    sc_core::sc_out_rv< INTR_NUM > pending[CPU_NUM];
+#endif    
     sc_core::sc_export< ClearIntr_tlm_if >  clearIPBR;
    
     SC_HAS_PROCESS(GIC_IntrDetect_TLM);
@@ -57,9 +61,11 @@ class GIC_IntrDetect_TLM
 template< int INTR_NUM, int CPU_NUM >
 GIC_IntrDetect_TLM< INTR_NUM, CPU_NUM >::GIC_IntrDetect_TLM(const sc_core::sc_module_name name, 
                                                                                           unsigned int intr_id)
-    :sc_core::sc_module(name)
+    :sc_core::sc_module(name)   
 {
+#ifdef SYSTEMC_2_3_0  
     pending.init(CPU_NUM);
+#endif
     
     clearIPBR(*this); 
     this->intr_id = intr_id;
@@ -72,9 +78,9 @@ GIC_IntrDetect_TLM< INTR_NUM, CPU_NUM >::GIC_IntrDetect_TLM(const sc_core::sc_mo
         pending_flag_on[i] = sc_dt::SC_LOGIC_Z;
     pending_flag_on[intr_id] = sc_dt::SC_LOGIC_1;
     
-    for (int cpu = 0; cpu < CPU_NUM; cpu++)
-        pending[cpu].initialize(pending_flag_off);
-      
+    //for (int cpu = 0; cpu < CPU_NUM; cpu++)
+    //    pending[cpu].initialize(pending_flag_off);
+
     SC_THREAD(intr_detect_monitor);
 }
 
@@ -98,10 +104,11 @@ void GIC_IntrDetect_TLM< INTR_NUM, CPU_NUM >::intr_detect_monitor(void)
         pending[cpu]->write(pending_flag_off);
         
     while (1) {	   
+            cpu_loop = 0;
 	        detect->receive();
 	        while (cpu_loop < CPU_NUM) {
 			    /* Set pending bit*/
-	            if (IPTR->read()[cpu_loop] == '1') { /* Note: Only one cpu should be programmed as the target cpu. */
+	            if (IPTR->read()[cpu_loop] == '1') { /* Note: Only one cpu should be programmed as the target cpu. */           
 	                pending[cpu_loop]->write(pending_flag_on);
 #ifdef GIC_TRACE_ON
 					printf("%llu: interrupt detected -------- %d, sends to core %d \n", sc_core::sc_time_stamp().value(), intr_id, cpu_loop);
@@ -135,10 +142,14 @@ class GIC_CPUInterface_TLM
     sc_core::sc_in_rv< INTR_NUM > IPBR;
 	sc_core::sc_in< sc_dt::sc_uint< INTR_NUM > > IER;
     sc_core::sc_out< bool > nIRQ;
+#ifdef SYSTEMC_2_3_0      
     sc_core::sc_vector< sc_core::sc_port< ClearIntr_tlm_if > > clearIPBR;
+#else
+    sc_core::sc_port< ClearIntr_tlm_if > clearIPBR[INTR_NUM];
+#endif
    
     SC_HAS_PROCESS(GIC_CPUInterface_TLM);
-    GIC_CPUInterface_TLM(const sc_core::sc_module_name name, unsigned int cpu_id);
+    GIC_CPUInterface_TLM(const sc_core::sc_module_name name, unsigned int cpu_id, sc_dt::uint64 clock_period = BUS_CLOCK_PERIOD);
      ~GIC_CPUInterface_TLM();
 
     /* intrState_tlm_if methods*/
@@ -150,17 +161,20 @@ class GIC_CPUInterface_TLM
     sc_core::sc_event ack_event;
     sc_core::sc_event eoi_event;
     unsigned int ack, eoi;
+    sc_dt::uint64 bus_clock_period;
     
     void cpu_monitor(void);
 };    
 
 template< int INTR_NUM, int CPU_NUM >
 GIC_CPUInterface_TLM< INTR_NUM, CPU_NUM >::GIC_CPUInterface_TLM(const sc_core::sc_module_name name,
-                                                                                                      unsigned int cpu_id)
+                                                                                                      unsigned int cpu_id, sc_dt::uint64 clock_period)
     :sc_core::sc_module(name)
 {
+#ifdef SYSTEMC_2_3_0   
     clearIPBR.init(INTR_NUM);
-    
+#endif
+    this->bus_clock_period = clock_period;
     this->cpu_id = cpu_id;
     nIRQ.initialize(1);
     
@@ -191,24 +205,22 @@ void GIC_CPUInterface_TLM< INTR_NUM, CPU_NUM >::cpu_monitor(void)
 {
     unsigned int intr_id;
     bool flag;        
-		
+	
     nIRQ->write(1);
     sc_core::wait(sc_core::SC_ZERO_TIME); // for start up
-    
-    while(1) {
 
+    while(1) {
         while ((IPBR.read().or_reduce()) == 0) 
             wait( IPBR->default_event() );
-
+   
         intr_id = GIC_SPURIOUS_INTERRUPT;
         flag = false;
         intr_id = 0;
         while (!flag && (intr_id < INTR_NUM)) 
-           if (IPBR->read()[intr_id] == '1' ) 
+           if (IPBR->read()[intr_id] != '0'  ) 
                 flag = true;
             else
                 intr_id++;
-            
         if (!flag)
             intr_id = GIC_SPURIOUS_INTERRUPT;
         if (flag)	 {
@@ -223,10 +235,12 @@ void GIC_CPUInterface_TLM< INTR_NUM, CPU_NUM >::cpu_monitor(void)
         nIRQ->write(1);
         /* EOI write*/
         sc_core::wait(eoi_event);
+#ifdef BUS_TIMED_MODEL        
+        sc_core::wait(bus_clock_period, SIM_RESOLUTION);
+#endif
         if (eoi != ack)
             std::cerr << sc_core::sc_time_stamp() << ": ERROR GIC << ACK != EOI >> \n";
         intr_id = GIC_SPURIOUS_INTERRUPT;	
-                   
     }
 }
 
@@ -238,21 +252,34 @@ class GenericIntrController_TLM
 {
  public:
     tlm::tlm_target_socket<> slave_target_socket;
+#ifdef SYSTEMC_2_3_0       
     sc_core::sc_vector< sc_core::sc_port< receive_if > > HINT_tlm;
     sc_core::sc_vector< sc_core::sc_out< bool > > nIRQ;
+#else
+    sc_core::sc_port< receive_if > HINT_tlm[INTR_NUM];
+    sc_core::sc_out< bool > nIRQ[CPU_NUM];
+#endif
 
-    GenericIntrController_TLM(const sc_core::sc_module_name name);
+    GenericIntrController_TLM(const sc_core::sc_module_name name, sc_dt::uint64 clock_period = BUS_CLOCK_PERIOD);
     ~GenericIntrController_TLM();
 	
 	 void setIntrTargetCPU(int intrID, int targetCPU);
 	 
  private:
      /* Interrupt Pending Registers */
+#ifdef SYSTEMC_2_3_0      
     sc_core::sc_vector< sc_core::sc_signal_rv< INTR_NUM > >  IPBR;
+#else
+    sc_core::sc_signal_rv< INTR_NUM > IPBR[CPU_NUM];
+#endif
     /* Interrupt Enable Bit Register */
     sc_core::sc_signal< sc_dt::sc_uint< INTR_NUM > >  IER;
     /* Interrupt Processor Target Registers */
+#ifdef SYSTEMC_2_3_0 
     sc_core::sc_vector< sc_core::sc_signal< sc_dt::sc_bv< GIC_MAX_CPU > > > IPTR;
+#else
+    sc_core::sc_signal< sc_dt::sc_bv< GIC_MAX_CPU > > IPTR[INTR_NUM];
+#endif
           
     std::vector< GIC_IntrDetect_TLM< INTR_NUM, CPU_NUM >* > intrDetect;
     std::vector< GIC_CPUInterface_TLM< INTR_NUM, CPU_NUM >* > cpuInterface; 
@@ -266,7 +293,7 @@ class GenericIntrController_TLM
 };
 
 template< int INTR_NUM, int CPU_NUM > 
-GenericIntrController_TLM< INTR_NUM, CPU_NUM >::GenericIntrController_TLM(const sc_core::sc_module_name name)
+GenericIntrController_TLM< INTR_NUM, CPU_NUM >::GenericIntrController_TLM(const sc_core::sc_module_name name, sc_dt::uint64 clock_period)
     :sc_core::sc_module(name)
 {
 
@@ -274,11 +301,13 @@ GenericIntrController_TLM< INTR_NUM, CPU_NUM >::GenericIntrController_TLM(const 
     assert (CPU_NUM <= GIC_MAX_CPU);
     
     slave_target_socket.bind(*this);
-    
+
+#ifdef SYSTEMC_2_3_0     
     HINT_tlm.init(INTR_NUM);
     nIRQ.init(CPU_NUM);
     IPBR.init(CPU_NUM);
     IPTR.init(INTR_NUM);
+#endif
     
    /* Map all interrupts to CPU 0 */
     sc_dt::sc_bv< GIC_MAX_CPU > tmp;
@@ -297,19 +326,19 @@ GenericIntrController_TLM< INTR_NUM, CPU_NUM >::GenericIntrController_TLM(const 
 		det->detect(HINT_tlm[intr]);
 		det->IPTR(IPTR[intr]);
 		for (int cpu = 0; cpu< CPU_NUM; cpu++) 
-		    det->pending[cpu](IPBR[cpu]); 
+		    det->pending[cpu].bind(IPBR[cpu]); 
         intrDetect.push_back(det);				
     }
 			    
     for (int cpu = 0; cpu < CPU_NUM; cpu++ ) {
 	    GIC_CPUInterface_TLM< INTR_NUM, CPU_NUM >* cpu_if;
-        cpu_if = new GIC_CPUInterface_TLM< INTR_NUM, CPU_NUM >(sc_core::sc_gen_unique_name("cpu_interface"), cpu);
+        cpu_if = new GIC_CPUInterface_TLM< INTR_NUM, CPU_NUM >(sc_core::sc_gen_unique_name("cpu_interface"), cpu, clock_period);
          /* Port binding */  
         cpu_if->IPBR(IPBR[cpu]);
         cpu_if->IER(IER);
         cpu_if->nIRQ(nIRQ[cpu]);
         for (int intr = 0; intr < INTR_NUM; intr++ ) 
-            cpu_if->clearIPBR[intr](intrDetect[intr]->clearIPBR);
+            (cpu_if->clearIPBR[intr])(intrDetect[intr]->clearIPBR);
 	    cpuInterface.push_back(cpu_if);				
     }
 }

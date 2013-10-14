@@ -3,7 +3,7 @@
  * Parisa Razaghi, UT Austin <parisa.r@utexas.edu>
  * Last update: Jun. 2013
  ********************************************/
-
+#include <iomanip>
 #include "OS/PRTOS.h"
 
 using namespace HCSim; 
@@ -13,7 +13,11 @@ using namespace HCSim;
  */
 RTOS::RTOS()
     :sc_core::sc_channel(sc_core::sc_gen_unique_name("RTOS"))
+#ifdef SYSTEMC_2_3_0    
     ,os_sched_event_list("sch_event_ch", OS_MAXPROC)
+#else
+    //,os_sched_event_list(OS_MAXPROC)    
+#endif
 {
 }
 /*
@@ -21,7 +25,9 @@ RTOS::RTOS()
  */
 RTOS::RTOS(const sc_core::sc_module_name name):
     sc_core::sc_channel(name)
+#ifdef SYSTEMC_2_3_0
     ,os_sched_event_list("sch_event_ch", OS_MAXPROC)
+#endif    
 {
 }
 /*
@@ -30,15 +36,16 @@ RTOS::RTOS(const sc_core::sc_module_name name):
 RTOS::~RTOS()
 {
 #ifdef OS_STATISTICS_ON
-    std::cout << "*****************************************************************\n";
+    char time_uint[6][10] = {" fs", " ps", " ns", " us", " ms", " s"};
+    std::cout << "\n***************************************************************************\n";
     std::cout << "\t wait(time) was called "<< wait_for_time_cnt << "  times.\n";
-    std::cout << "-----------------------------------------------------------------\n";
-    std::cout <<" \tbusy duration \t\tfallback duration\tcontex-switches \n";
+    std::cout << "---------------------------------------------------------------------------\n";
+    std::cout << std::setw(30) << " busy duration " << std::setw(25) << "fallback duration" << std::setw(25) << " # of contex-switches \n";
     for (int c = 0; c < os_core_number; c++) {
-        std::cout  << "CORE-" << c << "\t"<< busy_duration[c]<< " (ns)\t\t" << fallback_duration[c] 
-                        << " (ns) \t" << task_switch_cnt[c] << "\n";
+        std::cout  << "CORE-" << c << std::setw(20) << busy_duration[c] << " " << time_uint[SIM_RESOLUTION] << std::setw(20) << fallback_duration[c] 
+                        << time_uint[SIM_RESOLUTION] << std::setw(20) << task_switch_cnt[c] << "\n";
     }
-    std::cout << "*****************************************************************\n";
+    std::cout << "***************************************************************************\n";
 #endif
 }
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -301,51 +308,59 @@ bool RTOS::checkIntrDependency(OSProc proc)
     bool fb_flag, dp_flag;
     sc_dt::uint64 adjusted_delay;
  
-    current_core = os_vdes[proc].schedcore;
-    other_core = 0;
-    dp_flag = false;
-    fb_flag = false;
-    adjusted_delay = OS_INFINIT_VAL;
-   
-    while (other_core < os_core_number) {
-        if (other_core != current_core) {
-      
-            intr_task = os_intrwait_queue[other_core];
-            while (intr_task != OS_NO_TASK) {
-	            if ((os_vdes[intr_task].launched_core_id == current_core) || 
-	                (os_vdes[intr_task].launched_core_id == OS_NO_CPU)) {
-	                dp_flag = true;
-	                app_task = os_vdes[intr_task].blocked_task_id;
-	                if (app_task != OS_NO_TASK) {
-	   
-	                    if (os_vdes[app_task].state == OS_IDLE) {
-	                    /* Interrupt handlers can be delayed until the next release time. */
-	                    adjusted_delay = MIN_VAL(adjusted_delay, (os_vdes[app_task].next_release_time - 
-						                                            	sc_core::sc_time_stamp().value()));
-	                    } 
-	                    else { 
-	                        core_id = os_vdes[app_task].schedcore;
-	                        if ((os_current[core_id] != OS_NO_TASK) &&
-		                       ((os_vdes[os_current[core_id]].priority < os_vdes[app_task].priority) &&
-		                        (os_vdes[os_current[core_id]].advance_time > sc_dt::UINT64_ZERO))) { 
-		                        adjusted_delay = MIN_VAL(adjusted_delay, (os_vdes[os_current[core_id]].advance_time - 
-							                                        sc_core::sc_time_stamp().value()));
-	                        } else
-		                        fb_flag = true;
-	                    }
-	  
-	                } else /* app_task is unknown */
-	                    fb_flag = true;
-	            }
-	            intr_task = os_vdes[intr_task].next;
+    if (os_vdes[proc].id_check) {
+    
+        current_core = os_vdes[proc].schedcore;
+        other_core = 0;
+        dp_flag = false;
+        fb_flag = false;
+        adjusted_delay = OS_INFINIT_VAL;
+           
+        while (other_core < os_core_number) {
+            if (other_core != current_core) {
+          
+                intr_task = os_intrwait_queue[other_core];
+                while (intr_task != OS_NO_TASK) {
+	                if ((os_vdes[intr_task].launched_core_id == current_core) || 
+	                    (os_vdes[intr_task].launched_core_id == OS_NO_CPU)) {
+	                    dp_flag = true;
+	                    app_task = os_vdes[intr_task].blocked_task_id;
+	                    if (app_task != OS_NO_TASK) {
+	       
+	                        if (os_vdes[app_task].state == OS_IDLE) {
+	                        /* Interrupt handlers can be delayed until the next release time. */
+	                        adjusted_delay = MIN_VAL(adjusted_delay, (os_vdes[app_task].next_release_time - 
+						                                                	sc_core::sc_time_stamp().value()));
+	                        } 
+	                        else { 
+	                            core_id = os_vdes[app_task].schedcore;
+	                            if ((os_current[core_id] != OS_NO_TASK) &&
+		                           ((os_vdes[os_current[core_id]].priority < os_vdes[app_task].priority) &&
+		                            (os_vdes[os_current[core_id]].advance_time > sc_dt::UINT64_ZERO))) { 
+		                            adjusted_delay = MIN_VAL(adjusted_delay, (os_vdes[os_current[core_id]].advance_time - 
+							                                            sc_core::sc_time_stamp().value()));
+	                            } else
+		                            fb_flag = true;
+	                        }
+	      
+	                    } else /* app_task is unknown */
+	                        fb_flag = true;
+	                }
+	                intr_task = os_vdes[intr_task].next;
+                }
             }
+            other_core++;
         }
-        other_core++;
+        if (fb_flag)
+            adjusted_delay = sc_dt::UINT64_ZERO;
+        os_vdes[proc].adjusted_delay = adjusted_delay;
+        os_vdes[proc].id_check = false;
+        
+        return dp_flag;
+        
     }
-    if (fb_flag)
-        adjusted_delay = sc_dt::UINT64_ZERO;
-    os_vdes[proc].adjusted_delay = adjusted_delay;
-    return dp_flag;
+    else
+        return os_vdes[proc].id_flag;
 }
 /*
  * Block 'proc' until to be scheduled.
@@ -406,6 +421,7 @@ void RTOS::dispatch(uint8_t core_id)
             os_vdes[proc].schedcore = core_id;
             os_vdes[proc].fallback_check = true;
             os_vdes[proc].predictive_mode= false;
+            os_vdes[proc].id_check = false;
             sendSched(os_current[core_id]);
         } 
         else
@@ -622,6 +638,8 @@ OSProc RTOS::taskCreate( const char *name, /* task name */
     os_vdes[p].predictive_mode = false;
     os_vdes[p].fallback_mode = false;
     os_vdes[p].fallback_check = true;
+    os_vdes[p].id_flag = false;
+    os_vdes[p].id_check = true;
   
     os_vdes[p].accumulated_delay = sc_dt::UINT64_ZERO;
     os_vdes[p].predicted_delay = sc_dt::UINT64_ZERO;
@@ -772,7 +790,8 @@ void RTOS::timeWait(sc_dt::uint64 sec, OSProc proc)
     core_id = os_vdes[proc].schedcore;
     predicted_delay = getPredictedDelay(proc);
 	fallback = checkFallbackMode(proc);
-    if (!fallback) {
+	
+	if (!fallback) {
         intr_dependency = checkIntrDependency(proc); 
         if (intr_dependency && (os_vdes[proc].adjusted_delay > 0))
             predicted_delay = MIN_VAL(predicted_delay, os_vdes[proc].adjusted_delay);
@@ -791,12 +810,11 @@ void RTOS::timeWait(sc_dt::uint64 sec, OSProc proc)
             os_vdes[proc].advance_time = 0;
             if (predicted_delay > os_vdes[proc].accumulated_delay)
 	            predicted_delay = os_vdes[proc].accumulated_delay;
-	
-            start_time = sc_core::sc_time_stamp().value();
+	        start_time = sc_core::sc_time_stamp().value();
             sc_core::wait(predicted_delay, SIM_RESOLUTION, os_intrhandler_event_list[core_id]);
             end_time = sc_core::sc_time_stamp().value();
             consumed_delay = end_time - start_time; 
-#ifdef OS_STATISTICS_ON
+    #ifdef OS_STATISTICS_ON
            fallback_duration[core_id] += consumed_delay;
 #endif
         }

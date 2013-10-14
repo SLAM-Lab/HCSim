@@ -5,7 +5,7 @@
  ******************************************************************************/
 
 #include <systemc>
-#include <tlm>
+#include <tlm.h>
 
 #include "HCSim.h"
 
@@ -193,8 +193,10 @@ class MCProcessor_OS
        OS/HAL interface
        >> MAC LINK/MEM Master Interface
      ----------------------------------------------------------*/  
-    sc_core::sc_vector< sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacLink > > mac_link_port;
-    sc_core::sc_vector< sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacMem > > mac_mem_port;
+    //sc_core::sc_vector< sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacLink > > mac_link_port;
+    //sc_core::sc_vector< sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacMem > > mac_mem_port;
+    sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacLink >  mac_link_port[CPU_NUM];
+    sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacMem >  mac_mem_port[CPU_NUM];
     /*---------------------------------------------------------
        Export OS interface to the HAL
      ----------------------------------------------------------*/
@@ -252,8 +254,8 @@ MCProcessor_OS< INTR_NUM, CPU_NUM >::MCProcessor_OS(const sc_core::sc_module_nam
     ,app_data_out_1("app_data_out_1", const_intr1_address)
     ,app_data_out_2("app_data_out_2", const_intr2_address)
 {
-    mac_link_port.init(CPU_NUM);
-    mac_mem_port.init(CPU_NUM);
+    //mac_link_port.init(CPU_NUM);
+    //mac_mem_port.init(CPU_NUM);
 
     intr_export(*this);
       
@@ -400,14 +402,16 @@ void Interrupt_Handler::intr_handler(void)
 {
     unsigned int INTSRC;
     unsigned long int addrPic;
-
+    sc_dt::uint64 delay;
+    
    while(1) {
            
         os_port->taskActivate(intr_handler_id);
 #ifdef INTR_TRACE_ON             
             printf("%llu: C%d Interrupt handler HAL layer start. \n", sc_core::sc_time_stamp().value(), core_id);
 #endif
-        sc_core::wait(IHANDLER_DELAY_1 * CLOCK_PERIOD, SIM_RESOLUTION); 
+        delay =  (sc_dt::uint64) IHANDLER_INSTR_1 * CLOCK_PERIOD;
+        sc_core::wait(delay, SIM_RESOLUTION); 
          /*---------------------------------------------------------
             Reads interrupt source ID 
          ----------------------------------------------------------*/ 	    	
@@ -439,10 +443,10 @@ void Interrupt_Handler::intr_handler(void)
                     break;
             }
             /* To measure interrupt handler response time (in mix_task_set example) */
-            /* Note: needs to be removed in other examples...*/
-			   mac_link_port->masterWrite(addrPic,  &INTSRC, sizeof(INTSRC));
-
-            sc_core::wait(IHANDLER_DELAY_2 * CLOCK_PERIOD, SIM_RESOLUTION); 
+            /* Note: needs to be removed in other examples... */
+            mac_link_port->masterWrite(addrPic,  &INTSRC, sizeof(INTSRC));
+            delay = (sc_dt::uint64)IHANDLER_INSTR_2 * CLOCK_PERIOD;
+            sc_core::wait(delay , SIM_RESOLUTION); 
             /*---------------------------------------------------------
                 Writes End-Of-Interrupt register
             ----------------------------------------------------------*/   	
@@ -471,7 +475,8 @@ class MCProcessor_HAL_TLM
        HAL/HW interface
        >> TLM2.0 Master Interface
      ----------------------------------------------------------*/ 
-    sc_core::sc_vector< tlm::tlm_initiator_socket<> > master_initiator_socket;
+    //sc_core::sc_vector< tlm::tlm_initiator_socket<> > master_initiator_socket;
+    tlm::tlm_initiator_socket<> master_initiator_socket[CPU_NUM];
     /*---------------------------------------------------------
        Export OS interface to the HW layer
      ----------------------------------------------------------*/
@@ -495,19 +500,22 @@ class MCProcessor_HAL_TLM
     /*---------------------------------------------------------
        MAC-(Link,Mem) / MAC-TLM Transactors
      ----------------------------------------------------------*/     
-    sc_core::sc_vector< HCSim::MasterMacLink2TLMInitiator > mac_link2tlm;
-    sc_core::sc_vector< HCSim::MasterMacMem2TLMInitiator > mac_mem2tlm;
-    sc_core::sc_vector< HCSim::TLMTarget2Initiator_Transducer > socket_transducer;
+    //sc_core::sc_vector< HCSim::MasterMacLink2TLMInitiator > mac_link2tlm;
+    //sc_core::sc_vector< HCSim::MasterMacMem2TLMInitiator > mac_mem2tlm;
+    //sc_core::sc_vector< HCSim::TLMTarget2Initiator_Transducer > socket_transducer;
+    HCSim::MasterMacLink2TLMInitiator mac_link2tlm[CPU_NUM];
+    HCSim::MasterMacMem2TLMInitiator mac_mem2tlm[CPU_NUM];
+    HCSim::TLMTarget2Initiator_Transducer socket_transducer[CPU_NUM];
 };
 
 template< int INTR_NUM, int CPU_NUM >
 MCProcessor_HAL_TLM< INTR_NUM, CPU_NUM >::MCProcessor_HAL_TLM(const sc_core::sc_module_name name,
 						sc_dt::uint64 simulation_quantum)
     :sc_core::sc_module(name)
-    ,master_initiator_socket("master_init_socket", CPU_NUM)    
-    ,mac_link2tlm("mac_link2tlm", CPU_NUM)
-    ,mac_mem2tlm("mac_mem2tlm", CPU_NUM)
-    ,socket_transducer("socket_transducer", CPU_NUM)
+   // ,master_initiator_socket("master_init_socket", CPU_NUM)    
+    //,mac_link2tlm("mac_link2tlm", CPU_NUM)
+    //,mac_mem2tlm("mac_mem2tlm", CPU_NUM)
+    //,socket_transducer("socket_transducer", CPU_NUM)
 {
   	hal_export(*this);
   	
@@ -610,12 +618,14 @@ class MCProcessor_HW_TLM
        HW/TLM interface
        >> TLM2.0 Master Interface
      ----------------------------------------------------------*/
-    sc_core::sc_vector< tlm::tlm_initiator_socket<> > master_initiator_socket;
+    //sc_core::sc_vector< tlm::tlm_initiator_socket<> > master_initiator_socket;
+    tlm::tlm_initiator_socket<>  master_initiator_socket[CPU_NUM];
     /*---------------------------------------------------------
        nIRQ signals
      ----------------------------------------------------------*/    
-    sc_core::sc_vector< sc_core::sc_in< bool > > nIRQ;
-        
+    //sc_core::sc_vector< sc_core::sc_in< bool > > nIRQ;
+    sc_core::sc_in< bool > nIRQ[CPU_NUM];    
+    
     MCProcessor_HW_TLM(const sc_core::sc_module_name name,
 		    sc_dt::uint64 simulation_quantum);
     ~MCProcessor_HW_TLM();
@@ -637,8 +647,8 @@ MCProcessor_HW_TLM< INTR_NUM, CPU_NUM >::MCProcessor_HW_TLM(const sc_core::sc_mo
 					      sc_dt::uint64 simulation_quantum)
    :sc_core::sc_module(name)
 {
-    master_initiator_socket.init(CPU_NUM);
-    nIRQ.init(CPU_NUM);
+    //master_initiator_socket.init(CPU_NUM);
+   // nIRQ.init(CPU_NUM);
   
   	std::stringstream module_name;
     module_name << name << "_HAL";    
@@ -685,8 +695,8 @@ class MCProcessor_TLM
        Interrupt interface
        >> Hardware interrupts 
      ----------------------------------------------------------*/    
-	sc_core::sc_vector< sc_core::sc_port< HCSim::receive_if > > HINTR_tlm;
-	
+	//sc_core::sc_vector< sc_core::sc_port< HCSim::receive_if > > HINTR_tlm;
+	sc_core::sc_port< HCSim::receive_if >  HINTR_tlm[INTR_NUM];
     MCProcessor_TLM(const sc_core::sc_module_name name, 
                                   sc_dt::uint64 simulation_quantum);
     ~MCProcessor_TLM();
@@ -714,13 +724,13 @@ MCProcessor_TLM< INTR_NUM, CPU_NUM >::MCProcessor_TLM(const sc_core::sc_module_n
    :sc_core::sc_module(name)
    ,master_socket_wrapper("tlm_master_socket_wrapper")
 {
-    HINTR_tlm.init(INTR_NUM);
+    //HINTR_tlm.init(INTR_NUM);
     
    	GIC = new HCSim::GenericIntrController_TLM<INTR_NUM, CPU_NUM> (sc_core::sc_gen_unique_name("GIC")) ;
     for (int intr = 0; intr < INTR_NUM; intr++) 
         GIC->HINT_tlm[intr](HINTR_tlm[intr]);   
     for (int cpu = 0; cpu < CPU_NUM; cpu++)      
-        GIC->nIRQ[cpu](nIRQ[cpu]);
+        (GIC->nIRQ[cpu])(nIRQ[cpu]);
     /* Set interrupt target CPU IDs */
     GIC->setIntrTargetCPU(1, 0);
     GIC->setIntrTargetCPU(2, 1);    

@@ -4,10 +4,13 @@
  * Last update: August 2013 
  ********************************************/
  
-#include <tlm>
+#include <tlm.h>
 
 #include "sim_config.h"
 #include "Channels/ambaAhb_if.h"
+#ifndef SYSTEMC_2_3_0
+#include <vector>
+#endif
 
 #ifndef SC_ADAPTERS_TLM__H
 #define SC_ADAPTERS_TLM__H
@@ -150,21 +153,25 @@ public:
          ,target_socket(sc_core::sc_gen_unique_name("target_socket"))
     {
         target_socket.bind( *this );
+        bus_clock_period = BUS_CLOCK_PERIOD;
     }   
-    SlaveMacLink2TLMTarget(sc_core::sc_module_name _name)
+    SlaveMacLink2TLMTarget(sc_core::sc_module_name _name, sc_dt::uint64 clock_period = BUS_CLOCK_PERIOD)
         :sc_core::sc_module(_name)
         ,target_socket(sc_core::sc_gen_unique_name("target_socket"))
     {
         target_socket.bind( *this );
+        bus_clock_period = clock_period;
     }
     virtual ~SlaveMacLink2TLMTarget() {}
     
     void slaveWrite(unsigned long addr, const void* data, unsigned long len)  
     {
+	            
         do {   
 	        wait(master_read_event);
 	    } while (ADDR != addr);
 	    memcpy(DATA, data, len);
+ 	    
 #ifdef BUS_TIMED_MODEL	
        sc_core::wait(getShortestTransferTime(len, ADDR, false), SIM_RESOLUTION);
 #endif    
@@ -181,6 +188,11 @@ public:
 	sc_core::wait(getShortestTransferTime(len, ADDR, false), SIM_RESOLUTION);
 #endif	    
 	    ack_event.notify();     
+    }
+    
+    void setClockPeriod(sc_dt::uint64 clock_period) 
+    {
+        bus_clock_period = clock_period;
     }
     
     virtual void b_transport( tlm::tlm_generic_payload& trans, sc_core::sc_time& delay )
@@ -236,7 +248,8 @@ public:
     sc_dt::uint64 ADDR;
     void * DATA;
     unsigned int LEN;    
-
+    sc_dt::uint64 bus_clock_period;
+    
  private:
    sc_dt::uint64 getShortestTransferTime(unsigned int len, 
                                          unsigned long int addr,
@@ -246,10 +259,10 @@ public:
         unsigned int transfers;
         unsigned long long int cycleOffset;
 
-	     cycleOffset = ((sc_core::sc_time_stamp().value() + (BUS_CLOCK_PERIOD / 2)) % BUS_CLOCK_PERIOD);
+	     cycleOffset = ((sc_core::sc_time_stamp().value() + (bus_clock_period / 2)) % bus_clock_period);
         if ((cycleOffset == 0) && (sc_core::sc_delta_count() <= 1)) 
         {   
-            cycleOffset = BUS_CLOCK_PERIOD;
+            cycleOffset = bus_clock_period;
         }
         if (len && (addr & 1))
         {   
@@ -286,7 +299,7 @@ public:
             transfers++ ;
         }
         cycles += transfers * 4;
-        return cycles * BUS_CLOCK_PERIOD - cycleOffset;
+        return cycles * bus_clock_period - cycleOffset;
     }       
            
 };
@@ -304,14 +317,21 @@ public:
          ,target_socket(sc_core::sc_gen_unique_name("target_socket"))
     {
         target_socket.bind( *this );
+        bus_clock_period = BUS_CLOCK_PERIOD;
     }   
-    SlaveMacMem2TLMTarget(sc_core::sc_module_name _name)
+    SlaveMacMem2TLMTarget(sc_core::sc_module_name _name, sc_dt::uint64 clock_period = BUS_CLOCK_PERIOD)
         :sc_core::sc_module(_name)
         ,target_socket(sc_core::sc_gen_unique_name("target_socket"))
     {
         target_socket.bind( *this );
+        bus_clock_period = clock_period;
     }
     virtual ~SlaveMacMem2TLMTarget() {}
+ 
+    void setClockPeriod(sc_dt::uint64 clock_period) 
+    {
+        bus_clock_period = clock_period;
+    }   
     
     void serve(unsigned long int addr, void *data, unsigned long int len)
     {  
@@ -399,7 +419,8 @@ public:
     sc_dt::uint64 ADDR;
     void * DATA;
     unsigned int LEN;    
- 
+    sc_dt::uint64 bus_clock_period;
+     
 private:
 
    sc_dt::uint64 getShortestTransferTime(unsigned int len, 
@@ -410,10 +431,10 @@ private:
         unsigned int transfers;
         unsigned long long int cycleOffset;
 
-	     cycleOffset = ((sc_core::sc_time_stamp().value() + (BUS_CLOCK_PERIOD / 2)) % BUS_CLOCK_PERIOD);
+	     cycleOffset = ((sc_core::sc_time_stamp().value() + (bus_clock_period / 2)) % bus_clock_period);
         if ((cycleOffset == 0) && (sc_core::sc_delta_count() <= 1)) 
         {   
-            cycleOffset = BUS_CLOCK_PERIOD;
+            cycleOffset = bus_clock_period;
         }
         if (len && (addr & 1))
         {   
@@ -450,7 +471,7 @@ private:
             transfers++ ;
         }
         cycles += transfers * 4;
-        return cycles * BUS_CLOCK_PERIOD - cycleOffset;
+        return cycles * bus_clock_period - cycleOffset;
     }       
 };
 /*===================================================================*/
@@ -462,18 +483,25 @@ class TLMInitiatorSocket_Master_Wrap
 {
  public:
     tlm:: tlm_initiator_socket<> initiator_socket;
+#ifdef SYSTEMC_2_3_0    
     sc_core::sc_vector< tlm::tlm_target_socket<> > target_socket;
-
+#else
+    tlm::tlm_target_socket<> target_socket[MASTER_NUM];
+#endif
     TLMInitiatorSocket_Master_Wrap(const sc_core::sc_module_name name)
         :sc_core::sc_module(name)
         ,initiator_socket(sc_core::sc_gen_unique_name("init_socket"))
+#ifdef SYSTEMC_2_3_0   
         ,target_socket(sc_core::sc_gen_unique_name("target_socket"), MASTER_NUM)
+#endif
     {
         initiator_socket.bind(*this);
         for (int cpu = 0; cpu < MASTER_NUM; cpu++)
             target_socket[cpu].bind(*this);
     }
-    ~TLMInitiatorSocket_Master_Wrap() {}
+    ~TLMInitiatorSocket_Master_Wrap() 
+    {   
+    }
  
     virtual void b_transport( tlm::tlm_generic_payload& trans, sc_core::sc_time& delay )
     {
@@ -529,6 +557,14 @@ typedef tlm::tlm_target_socket<32,
     tlm:: tlm_initiator_socket<> initiator_socket;
     target_socket_type target_socket;
 
+    TLMTarget2Initiator_Transducer()
+        :sc_core::sc_module(sc_core::sc_gen_unique_name("tlm_target2initiator_transducer"))
+        ,initiator_socket(sc_core::sc_gen_unique_name("init_socket"))
+        ,target_socket(sc_core::sc_gen_unique_name("target_socket"))
+    {
+        initiator_socket.bind(*this);
+        target_socket.bind(*this);
+    }
     TLMTarget2Initiator_Transducer(const sc_core::sc_module_name name)
         :sc_core::sc_module(name)
         ,initiator_socket(sc_core::sc_gen_unique_name("init_socket"))

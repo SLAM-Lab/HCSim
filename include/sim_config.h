@@ -1,20 +1,24 @@
 
-#define SIM_RESOLUTION sc_core::SC_NS
+#define SIM_RESOLUTION sc_core::SC_PS
 
-#define CLOCK_PERIOD 1 /*SC_NS*/
-#define BUS_CLOCK_PERIOD 1 /*SC_NS*/
+#define CLOCK_PERIOD 1000/*SC_PS*/
+#define BUS_CLOCK_PERIOD 1000 /*SC_PS*/
 /********************************************
-    COMMENT OUT FOR UNTIMED BUS MODEL
+    COMMENT OUT FOR UNTIMED BUS MODEL                    */    
 #define BUS_TIMED_MODEL
-********************************************/
+/********************************************/
 /********************************************
     Interrupt Handler macros
     >> Delays could be application-specific
     >> The following numbers are obtained from Linux kernel traces.
 */
-#define IHANDLER_DELAY_1 (2650*CLOCK_PERIOD)
-#define IHANDLER_DELAY_2 (450*CLOCK_PERIOD)
-#define SHANDLER_DELAY (2800*CLOCK_PERIOD)
+#define IHANDLER_DELAY_1 ((sc_dt::uint64)2650*CLOCK_PERIOD)
+#define IHANDLER_DELAY_2 ((sc_dt::uint64)450*CLOCK_PERIOD)
+#define SHANDLER_DELAY ((sc_dt::uint64)2800*CLOCK_PERIOD)
+
+#define IHANDLER_INSTR_1 2650
+#define IHANDLER_INSTR_2 450
+#define SHANDLER_INSTR 2800
 
 /********************************************
     COMMENT OUT FOR UNTIMED OS HANDSHAKE CHANNEL 
@@ -22,9 +26,14 @@
     >> The following numbers are for artificial task sets example.
 */    
 #define TIMED_HANDSHAKE_CHANNEL
-#define HSHK_CH_RECEIVE_DELAY (800*CLOCK_PERIOD)
-#define HSHK_CH_RECEIVE_DELAY_2 (1290*CLOCK_PERIOD)
-#define HSHK_CH_SEND_DELAY (1500*CLOCK_PERIOD)
+#define HSHK_CH_RECEIVE_DELAY ((sc_dt::uint64)800*CLOCK_PERIOD)
+#define HSHK_CH_RECEIVE_DELAY_2 ((sc_dt::uint64)1290*CLOCK_PERIOD)
+#define HSHK_CH_SEND_DELAY ((sc_dt::uint64)1500*CLOCK_PERIOD)
+
+#define HSHK_CH_RECEIVE_INSTR 800
+#define HSHK_CH_RECEIVE_INSTR_2 1290
+#define HSHK_CH_SEND_INSTR 1500
+
 /*
 *********************************************/
 

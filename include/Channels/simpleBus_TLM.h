@@ -3,12 +3,18 @@
  * Parisa Razaghi, UT Austin <parisa.r@utexas.edu>
  * Last update: August 2013 
  ********************************************/
+ #define SC_INCLUDE_DYNAMIC_PROCESSES
  
-#include <tlm>
+#include <tlm.h>
 #include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/simple_initiator_socket.h"
+#ifndef SYSTEMC_2_3_0  
+#include <vector>
+#endif
 
 #include "sim_config.h"
+
+
 
 #ifndef SC_SIMPLE_BUS_TLM__H
 #define SC_SIMPLE_BUS_TLM__H
@@ -20,14 +26,21 @@ class simpleBus_TLM
     :public sc_core::sc_module
 {
   public:
+#ifdef SYSTEMC_2_3_0  
     sc_core::sc_vector< tlm_utils::simple_target_socket< simpleBus_TLM > > master_target_socket;
     sc_core::sc_vector< tlm_utils::simple_initiator_socket< simpleBus_TLM > > slave_initiator_socket;
-  
+#else
+    tlm_utils::simple_target_socket< simpleBus_TLM > master_target_socket[MASTER_NUM];
+    tlm_utils::simple_initiator_socket< simpleBus_TLM > slave_initiator_socket[SLAVE_NUM];
+#endif  
+
     SC_HAS_PROCESS(simpleBus_TLM);
     simpleBus_TLM(const sc_core::sc_module_name name)
         :sc_core::sc_module(name)
+#ifdef SYSTEMC_2_3_0          
         ,master_target_socket("master_target_socket", MASTER_NUM)
         ,slave_initiator_socket("slave_initiator_socket", SLAVE_NUM)
+#endif        
     {
         for (int m = 0; m < MASTER_NUM; m++) {
             master_target_socket[m].register_nb_transport_fw(this, &simpleBus_TLM::nb_transport_fw);

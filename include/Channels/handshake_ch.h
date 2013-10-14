@@ -21,6 +21,7 @@ class handshake_ch
  public:
 	
     handshake_ch(const sc_core::sc_module_name name);
+	handshake_ch();
     ~handshake_ch();
 
     void send(void);

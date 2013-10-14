@@ -4,8 +4,10 @@
  * Last update: Jun. 2013                                            
  ********************************************/
 #include <stdint.h>
-#include <vector>
 #include <systemc>
+#ifndef SYSTEMC_2_3_0
+#include <vector>
+#endif
 
 #include "sim_config.h"
 #include "OS/OSAPI.h"
@@ -23,7 +25,7 @@ class RTOS
 {
  public:
 
-  RTOS();
+    RTOS();
     RTOS(const sc_core::sc_module_name name);
     virtual ~RTOS();
   
@@ -86,8 +88,12 @@ class RTOS
     OSProc peekFirstTask(OSQueue *que);
   
  private:
-
+#ifdef SYSTEMC_2_3_0
     sc_core::sc_vector< handshake_ch > os_sched_event_list; /* scheduler event list */
+#else
+     //std::vector< handshake_ch > os_sched_event_list;//OS_MAXPROC); /* scheduler event list */
+    handshake_ch os_sched_event_list[OS_MAXPROC];
+#endif
     sc_core::sc_event os_intrhandler_event_list[OS_MAXCORE];
     struct TCB os_vdes[OS_MAXPROC]; /* task control block */
     OSProc     os_current[OS_MAXCORE]; /* tasks in execution */

@@ -10,7 +10,7 @@ STATIC_LIB = libhcsim.a
 DEFINES	= -DSC_INCLUDE_DYNAMIC_PROCESSES
 
 CC = g++ 
-CFLAGS	= -g -O2 -Wall -fPIC $(DEFINES) -I. -I../include -I$(SYSTEMC_DIR)/include
+CFLAGS	= -g -O2 -Wall -fPIC $(DEFINES) -I. -I../include -I$(SYSTEMC_DIR)/include -I$(TLM_INC)
 
 all: $(SHARED_LIB)
 

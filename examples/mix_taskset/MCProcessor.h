@@ -192,8 +192,11 @@ class MCProcessor_OS
        OS/HAL interface
        >> MAC LINK/MEM Master Interface
      ----------------------------------------------------------*/  
-    sc_core::sc_vector< sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacLink > > mac_link_port;
-    sc_core::sc_vector< sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacMem > > mac_mem_port;
+    //sc_core::sc_vector< sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacLink > > mac_link_port;
+    //sc_core::sc_vector< sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacMem > > mac_mem_port;
+    sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacLink > mac_link_port[CPU_NUM];
+    sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacMem > mac_mem_port[CPU_NUM];
+    
     /*---------------------------------------------------------
        Export OS interface to the HAL
      ----------------------------------------------------------*/
@@ -251,8 +254,8 @@ MCProcessor_OS< INTR_NUM, CPU_NUM >::MCProcessor_OS(const sc_core::sc_module_nam
     ,app_data_out_1("app_data_out_1", const_intr1_address)
     ,app_data_out_2("app_data_out_2", const_intr2_address)
 {
-    mac_link_port.init(CPU_NUM);
-    mac_mem_port.init(CPU_NUM);
+    //mac_link_port.init(CPU_NUM);
+    //mac_mem_port.init(CPU_NUM);
 
     intr_export(*this);
       
@@ -406,7 +409,7 @@ void Interrupt_Handler::intr_handler(void)
 #ifdef INTR_TRACE_ON             
             printf("%llu: C%d Interrupt handler HAL layer start. \n", sc_core::sc_time_stamp().value(), core_id);
 #endif
-        sc_core::wait(IHANDLER_DELAY_1 * CLOCK_PERIOD, SIM_RESOLUTION); 
+        sc_core::wait(IHANDLER_DELAY_1, SIM_RESOLUTION); 
          /*---------------------------------------------------------
             Reads interrupt source ID 
          ----------------------------------------------------------*/ 	    	
@@ -441,7 +444,7 @@ void Interrupt_Handler::intr_handler(void)
             /* Note: needs to be removed in other examples...*/
 			bus_master_port->masterWrite(addrPic,  &INTSRC, sizeof(INTSRC));
 
-            sc_core::wait(IHANDLER_DELAY_2 * CLOCK_PERIOD, SIM_RESOLUTION); 
+            sc_core::wait(IHANDLER_DELAY_2, SIM_RESOLUTION); 
             /*---------------------------------------------------------
                 Writes End-Of-Interrupt register
             ----------------------------------------------------------*/   	
@@ -470,7 +473,8 @@ class MCProcessor_HAL
        HAL/HW interface
        >> MAC TLM PROT Master Interface
      ----------------------------------------------------------*/ 
-    sc_core::sc_vector< sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacTlmProt > > bus_master_port;
+    //sc_core::sc_vector< sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacTlmProt > > bus_master_port;
+    sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacTlmProt > bus_master_port[CPU_NUM];
     /*---------------------------------------------------------
        Export OS interface to the HW layer
      ----------------------------------------------------------*/
@@ -495,8 +499,10 @@ class MCProcessor_HAL
     /*---------------------------------------------------------
        MAC-(Link,Mem) / MAC-TLM Transactors
      ----------------------------------------------------------*/     
-	sc_core::sc_vector< HCSim::AmbaAhbBusMasterMacLinkPass > mac_link2tlm;
-	sc_core::sc_vector< HCSim::AmbaAhbBusMasterMacMemPass > mac_mem2tlm;
+	//sc_core::sc_vector< HCSim::AmbaAhbBusMasterMacLinkPass > mac_link2tlm;
+	//sc_core::sc_vector< HCSim::AmbaAhbBusMasterMacMemPass > mac_mem2tlm;
+	HCSim::AmbaAhbBusMasterMacLinkPass mac_link2tlm[CPU_NUM];
+	HCSim::AmbaAhbBusMasterMacMemPass mac_mem2tlm[CPU_NUM];
 };
 
 template< int INTR_NUM, int CPU_NUM >
@@ -504,9 +510,9 @@ MCProcessor_HAL< INTR_NUM, CPU_NUM >::MCProcessor_HAL(const sc_core::sc_module_n
 						sc_dt::uint64 simulation_quantum)
     :sc_core::sc_module(name)
 {
-    mac_link2tlm.init(CPU_NUM);
-    mac_mem2tlm.init(CPU_NUM);
-    bus_master_port.init(CPU_NUM);
+    //mac_link2tlm.init(CPU_NUM);
+    //mac_mem2tlm.init(CPU_NUM);
+    //bus_master_port.init(CPU_NUM);
     
   	hal_export(*this);
   	
@@ -605,11 +611,13 @@ class MCProcessor_HW
        HW/TLM interface
        >> MAC TLM PROT Master Interface
      ----------------------------------------------------------*/
-    sc_core::sc_vector< sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacTlmProt > > bus_master_port;
+    //sc_core::sc_vector< sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacTlmProt > > bus_master_port;
+    sc_core::sc_port< HCSim::IAmbaAhbBusMasterMacTlmProt > bus_master_port[CPU_NUM];
     /*---------------------------------------------------------
        nIRQ signals
      ----------------------------------------------------------*/    
-    sc_core::sc_vector< sc_core::sc_in< bool > > nIRQ;
+    //sc_core::sc_vector< sc_core::sc_in< bool > > nIRQ;
+    sc_core::sc_in< bool > nIRQ[CPU_NUM];
         
     MCProcessor_HW(const sc_core::sc_module_name name,
 		    sc_dt::uint64 simulation_quantum);
@@ -632,8 +640,8 @@ MCProcessor_HW< INTR_NUM, CPU_NUM >::MCProcessor_HW(const sc_core::sc_module_nam
 					      sc_dt::uint64 simulation_quantum)
    :sc_core::sc_module(name)
 {
-    bus_master_port.init(CPU_NUM);
-    nIRQ.init(CPU_NUM);
+    //bus_master_port.init(CPU_NUM);
+    //nIRQ.init(CPU_NUM);
   
   	std::stringstream module_name;
     module_name << name << "_HAL";    
@@ -680,7 +688,8 @@ class MCProcessor
        Interrupt interface
        >> Hardware interrupts 
      ----------------------------------------------------------*/    
-	sc_core::sc_vector< sc_core::sc_port< HCSim::receive_if > > HINTR_tlm;
+	//sc_core::sc_vector< sc_core::sc_port< HCSim::receive_if > > HINTR_tlm;
+	sc_core::sc_port< HCSim::receive_if > HINTR_tlm[INTR_NUM];
 	
     MCProcessor(const sc_core::sc_module_name name, 
                                   sc_dt::uint64 simulation_quantum);
@@ -709,7 +718,7 @@ MCProcessor< INTR_NUM, CPU_NUM >::MCProcessor(const sc_core::sc_module_name name
    :sc_core::sc_module(name)
    ,master_port_wrapper("tlm_master_port_wrapper")
 {
-    HINTR_tlm.init(INTR_NUM);
+    //HINTR_tlm.init(INTR_NUM);
 
    	GIC = new HCSim::GenericIntrController<INTR_NUM, CPU_NUM> (sc_core::sc_gen_unique_name("GIC")) ;
     GIC->bus_slave_port(MainBus_tlm_slave_port);

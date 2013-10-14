@@ -7,6 +7,13 @@
 
 using namespace HCSim;
 
+handshake_ch::handshake_ch()
+    :sc_core::sc_channel(sc_core::sc_gen_unique_name("handshake_ch"))
+    ,forward_flag(false)
+    ,wait_flag(false)
+{
+}
+
 handshake_ch::handshake_ch(const sc_core::sc_module_name name)
     :sc_core::sc_channel(name)
     ,forward_flag(false)

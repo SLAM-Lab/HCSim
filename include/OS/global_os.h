@@ -24,7 +24,7 @@ const sc_dt::uint64 OS_MAXDLINE = (0xFFFFFFFFFFFFFFFF);  /* max deadline */
 const unsigned int OS_PRT_LEV = 255;                     /* number of priority levels */
 const int OS_NILL = -1;                                              /* null pointer */
 const int OS_MAXCORE = 64;                     /* max number of cores */
-const unsigned int OS_INFINIT_VAL = 0X7FFFFFFF;   /* infinit number*/
+const sc_dt::uint64 OS_INFINIT_VAL = 0X7FFFFFFFFFFFFFFF;   /* infinit number*/
 const unsigned int OS_DEFAULT_GRANULARITY = 1000;   /* default timing granularity (PSec) */
 const  int OS_NO_TASK  = OS_NILL;
 const  int OS_NO_CPU = OS_NILL;
@@ -99,6 +99,8 @@ struct TCB {
     bool               predictive_mode;     /* os is in predictive mode */
     bool               fallback_mode;        /* os is in fallback mode */
     bool               fallback_check;        /* fallback check is required */
+    bool               id_flag;                   /* inter-core interrupt dependency (id) flag */
+    bool               id_check;                /* id check is required */
     OSProc          blocked_task_id;     /* blocked task */
     OSProc          blocking_task_id;    /* blocking task */
     uint8_t          launched_core_id;  /* launched core id of interrupt handler */ 

@@ -22,14 +22,16 @@ class Mix_Task_Set
     :public sc_core::sc_module
 {
  public:
-    sc_core::sc_vector< sc_core::sc_port< HCSim::receive_os_if > > intrCH;
-    sc_core::sc_vector< sc_core::sc_port< HCSim::send_os_if > > dataCH;
+    //sc_core::sc_vector< sc_core::sc_port< HCSim::receive_os_if > > intrCH;
+    //sc_core::sc_vector< sc_core::sc_port< HCSim::send_os_if > > dataCH;
+    sc_core::sc_port< HCSim::receive_os_if >  intrCH[2];
+    sc_core::sc_port< HCSim::send_os_if >  dataCH[2];
     sc_core::sc_port< HCSim::OSAPI > os_port;
 
     Mix_Task_Set(const sc_core::sc_module_name name): sc_core::sc_module(name)
     {
-        intrCH.init(2);
-        dataCH.init(2);
+        //intrCH.init(2);
+        //dataCH.init(2);
         
         for (int t = 0; t < TOTAL_TASK_NUMBER; t++) {
             Periodic_Task * PT;

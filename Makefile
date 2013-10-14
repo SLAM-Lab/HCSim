@@ -5,7 +5,7 @@ TARGET	= libhcsim.so
 
 SUBDIRS	= src bin 
 
-EXAMPLES= examples/simple_taskset examples/mix_taskset examples/mix_taskset_tlm2.0
+EXAMPLES= examples/mix_taskset examples/mix_taskset_tlm2.0
 
 all:
 	set -e ; for d in $(SUBDIRS); do	\
