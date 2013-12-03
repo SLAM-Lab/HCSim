@@ -19,6 +19,9 @@
 #include "Processor/GenericIntrController_TLM.h"
 #include "Channels/simpleBus_TLM.h"
 #include "Channels/adapters_TLM.h"
+/*Sabine*/
+#include "Channels/sc_mutex_os_if.h"
+#include "Channels/sc_mutex_os.h"
 
 #endif /* SC_HCSIM__H */
 

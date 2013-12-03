@@ -24,4 +24,6 @@ clean:
 	done
 	-$(RM) *~
 	-$(RM) lib/libhcsim.so
+	-$(RM) bin/setup.sh
+
 

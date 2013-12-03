@@ -1,7 +1,7 @@
 
 include ../Makefile.macros
 
-OBJECTS = handshake_ch.o handshake_os_ch.o PRTOS.o  ambaAhb.o GenericIntrController.o  MCProcessor_FM.o adapters_TLM.o simpleBus_TLM.o GenericIntrController_TLM.o
+OBJECTS = sc_mutex_os.o handshake_ch.o handshake_os_ch.o PRTOS.o  ambaAhb.o GenericIntrController.o  MCProcessor_FM.o adapters_TLM.o simpleBus_TLM.o GenericIntrController_TLM.o
 
 SHARED_LIB = libhcsim.so
 STATIC_LIB = libhcsim.a
@@ -16,6 +16,11 @@ all: $(SHARED_LIB)
 
 $(SHARED_LIB): $(OBJECTS) 
 	$(CC) -shared $^ -o $@
+
+#Sabine
+sc_mutex_os.o: Channels/sc_mutex_os.cpp   
+	$(CC) $(CFLAGS) -c  $<
+#Sabine
 
 adapters_TLM.o: Channels/adapters_TLM.cpp 
 	$(CC) $(CFLAGS) -c  $<
