@@ -1,8 +1,8 @@
 # SystemC path
-#SYSTEMC_DIR=/home/unga/group/gerstl/pkg/systemc-2.3.0
-#TLM_INC=/home/unga/group/gerstl/pkg/systemc-2.3.0
-SYSTEMC_DIR=/usr/local/packages/systemc-2.2.0
-TLM_INC=/usr/local/packages/systemc-tlm-2.0.1/include/tlm
+SYSTEMC_DIR=/home/unga/group/gerstl/pkg/systemc-2.3.0
+TLM_INC=/home/unga/group/gerstl/pkg/systemc-2.3.0
+#SYSTEMC_DIR=/usr/local/packages/systemc-2.2.0
+#TLM_INC=/usr/local/packages/systemc-tlm-2.0.1/include/tlm
 
 # Compiler
 CC	= g++

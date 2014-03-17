@@ -1,96 +1,69 @@
-##################################################
-#HOST-COMPILED MULTI_CORE SIMULATOR MODEL LIBRARY#
-##################################################
+HOST-COMPILED MULTI-CORE SYSTEM SIMULATOR 
+=========================================
 
-# To compile "libhcsim.so" library
-> make
+This is the release of the HCSim-1.0 simulator.
 
-# To run examples
-> source bin/setup.sh
-> make test
+This folder contains abstract models of real-time operating systems (RTOS) and 
+high-level multi-core processor models for full-system host-compiled simulation [1]. 
 
 
-#Folders & files tree
-HCsim
-├── Makefile.macros
-├── README
-├── setup.sh
-├── examples
-│   ├── mix_taskset
-│   │   ├── config.h
-│   │   ├── HInterruptGenerator.cpp
-│   │   ├── HInterruptGenerator.h
-│   │   ├── intrdriven_task_model.h
-│   │   ├── main.cpp
-│   │   ├── Makefile
-│   │   ├── MCProcessor.h
-│   │   ├── mix_task_set.h
-│   │   ├── periodic_task_model.h
-│   │   └── top_module.h
-│   ├── mix_taskset_tlm2.0
-│   │   ├── config.h
-│   │   ├── HInterruptGenerator_TLM.cpp
-│   │   ├── HInterruptGenerator_TLM.h
-│   │   ├── intrdriven_task_model.h
-│   │   ├── main.cpp
-│   │   ├── Makefile
-│   │   ├── MCProcessor_TLM.h
-│   │   ├── mix_task_set.h
-│   │   ├── periodic_task_model.h
-│   │   ├── simple_set.h
-│   │   └── top_module.h
-│   └── simple_taskset
-│       ├── main.cpp
-│       ├── Makefile
-│       ├── periodic_task_model.h
-│       └── simple_set.h
-├── include
-│   ├── HCSim.h
-│   ├── sim_config.h
-│   ├── Channels
-│   │   ├── adapters_TLM.h
-│   │   ├── adapters_TLM.h~
-│   │   ├── ambaAhb.h
-│   │   ├── ambaAhb_if.h
-│   │   ├── global_ambaAhb.h
-│   │   ├── handshake_ch.h
-│   │   ├── handshake_os_ch.h
-│   │   ├── receive_if.h
-│   │   ├── receive_os_if.h
-│   │   ├── send_if.h
-│   │   ├── send_os_if.h
-│   │   └── simpleBus_TLM.h
-│   ├── OS
-│   │   ├── global_os.h
-│   │   ├── OSAPI.h
-│   │   └── PRTOS.h
-│   └── Processor
-│       ├── GenericIntrController.h
-│       ├── GenericIntrController_TLM.h
-│       ├── GenericIntrController_TLM.h~
-│       ├── global_gic.h
-│       ├── interrupt_if.h
-│       └── MCProcessor_FM.h
-├── lib
-│   ├── libhcsim.so
-│   └── Makefile
-├── src
-│   ├── Channels
-│   │   ├── adapters_TLM.cpp
-│   │   ├── ambaAhb.cpp
-│   │   ├── handshake_ch.cpp
-│   │   ├── handshake_os_ch.cpp
-│   │   └── simpleBus_TLM.cpp
-│   ├── OS
-│   │   └── PRTOS.cpp
-│   └── Processor
-│       ├── GenericIntrController.cpp
-│       ├── GenericIntrController_TLM.cpp
-│       └── MCProcessor_FM.cpp
-└── utillities
-    ├── MCProcessor.h.template
-    ├── MCProcessor_TLM.h.template
-    ├── MixTaskSets_Example_Results.xlsx
-    └── MCProcessor_TLM.pdf
- 
+Building and installing:
+------------------------
+
+Build requirements:
+  - SystemC version 2.2.0 or 2.3.0  http://www.accellera.org/
+  - TLM 2.0 http://www.accellera.org/
+
+Preparation before build:
+  - Edit Makefile.macros. Set the following variables (external dependencies):
+      SYSTEMC_DIR - to the installation directory of SystemC-2.2.0 or SystemC-2.3.0
+      TLM_DIR - to the installation directory of TLM-2.0  
+
+Build hcsim library:
+  % make clean
+  % make all
+
+
+Running:
+--------
+
+Before run an example:
+   % source <install_path>/bin/setup.sh
+  
+To run examples locally:
+   % cd <example>
+   % make test
+
+<example> can be one of:
+  - examples/simple_taskset
+  - examples/mix_taskset
+  - example/mix_taskset_tlm2.0
     
+
+Directories:
+------------
+  include/                   -- Header files
+    OS/                         - OS models
+    Processor/                  - processor components models
+    Channels/                   - bus and primitive channels models
+  src/                       -- Source codes 
+    OS/                         - OS model 
+    Processor/                  - processor models 
+    Channels/                   - channel models 
+  examples/                  -- A set of examples running on a dual-core configuration
+    simple_taskset/             - artificial periodic task sets
+    mix_taskset/                - artificial periodic task sets plus interrupt-driven tasks
+    mix_taskset_tlm2.0          - mix_taskset example with TLM2.0-based bus model   
+  lib/                       -- symbolic link to hcsim library
+  bin/                       -- public executable (set set symbolic link to the library)
+  utilities/                 -- Design templates
+
+References:
+-----------
+[1] P. Razaghi, A. Gerstlauer, "Host-Compiled Multi-Core System Simulation
+    for Early Real-Time Performance Evaluation," ACM Transactions on Embedded
+    Computer Systems, 2014.
+
+--
+Parisa Razaghi <parisa.r@utexas.edu>
+Andreas Gerstlauer <gerst@ece.utexas.edu>    

@@ -900,19 +900,23 @@ void RTOS::preNotify(OSProc proc, OSProc blocked_tID)
  */
 void RTOS::postNotify(OSProc proc, OSProc blocked_tID)
 {
-    uint8_t core_id;
+    uint8_t core_id, blocked_core_id;
   
     if (blocked_tID != OS_NO_TASK) {
         core_id = os_vdes[proc].schedcore;
+        blocked_core_id = os_vdes[blocked_tID].schedcore;
         os_vdes[blocked_tID].state = OS_READY;
-        extractTask(blocked_tID, &os_wait_queue[core_id]);
+        extractTask(blocked_tID, &os_wait_queue[blocked_core_id]);
         if (os_vdes[blocked_tID].ts == sc_dt::UINT64_ZERO) {   
             os_vdes[blocked_tID].ts = os_vdes[blocked_tID].dts;
-            insertEndPriority(blocked_tID, &os_ready_queue[core_id]);
+            insertEndPriority(blocked_tID, &os_ready_queue[blocked_core_id]);
         }
         else
-            insertBeginPriority(blocked_tID, &os_ready_queue[core_id]);
-    
+            insertBeginPriority(blocked_tID, &os_ready_queue[blocked_core_id]);
+        
+        if ((core_id != blocked_core_id) && (os_current[blocked_core_id] == OS_NO_TASK))
+       	    dispatch(blocked_core_id);
+       	    
         schedule(core_id);
         wait4Sched(proc);
     }
